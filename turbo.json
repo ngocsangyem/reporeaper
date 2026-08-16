@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["eslint.config.js", "tsconfig.base.json", ".prettierrc.json"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -16,7 +17,7 @@
     },
     "reporeaper#build": {
       "dependsOn": ["@reporeaper/web#build", "^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", "!dist/web/**"]
     },
     "test": {
       "dependsOn": ["^build"]

@@ -1,6 +1,12 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
+    // Unlike the packages, api/ is not bundled — Vercel compiles these sources
+    // as they are. NodeNext resolution makes the compiler enforce the explicit
+    // file extensions that the runtime will require, instead of accepting
+    // extensionless imports that fail with ERR_MODULE_NOT_FOUND after deploy.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "types": ["node"]
   },
   "include": ["**/*.ts"],

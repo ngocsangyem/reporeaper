@@ -7,7 +7,10 @@
  */
 import { CORE_PACKAGE_NAME } from '@reporeaper/core';
 
-export const config = { runtime: 'edge' };
+// Node runtime, not edge: the access-password check in phase 3 needs
+// node:crypto's timing-safe comparison, and the entry is typechecked with
+// node types and NodeNext resolution to match.
+export const config = { runtime: 'nodejs20.x' };
 
 export default function handler(_request: Request): Response {
   return new Response(

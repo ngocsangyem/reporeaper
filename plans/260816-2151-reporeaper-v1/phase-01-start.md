@@ -91,6 +91,48 @@ The web build is a placeholder script that writes to the final location
 (`packages/cli/dist/web`); phase 5 replaces it with Vite using the same output
 directory, so the cross-package wiring is exercised from phase 1.
 
+## Review Outcomes
+
+A code review of the scaffold found the gates themselves defective. Fixed:
+
+- **CI was red as committed** — `pnpm audit --audit-level=high` failed on a
+  critical/high in the vitest→vite chain. Resolved by upgrading rather than
+  scoping the audit: vitest 4 pulls rolldown native bindings that pnpm blocks,
+  so the workspace sits on vitest 3.2.7, which audits clean at high+.
+- **The sentinel scan missed `util.inspect`** — the very function
+  `console.log`/`console.error` and Node's uncaught-exception printer use, and
+  the only one that sees private and non-enumerable state. A token in a `Map`
+  or an `Error` cause slipped through.
+- **A single unterminated stdout write disabled all leak reporting** — the
+  child's report line could be spliced onto module output. Findings now go to a
+  JSON report file, immune to stream interleaving.
+- **`eslint.config.js` was in no turbo hash** — the lint gate could be weakened
+  and still report `FULL TURBO`. Added `globalDependencies`.
+- **`reporeaper#build` cached `dist/web`** — a cache hit would restore stale web
+  assets over the fresh build. Outputs now exclude it.
+- **Three ESLint escape hatches** — a broad `**/scripts/**` / `**/*.config.ts`
+  override switched `no-console` off inside token-handling trees, and the globs
+  covered `.ts` only, so `.tsx`/`.mjs` were unguarded. All four now error;
+  `packages/cli/src/bin.ts` still prints, as the CLI must.
+
+`scripts/token-hygiene-selftest.mjs` now runs before the gate in `pnpm hygiene`,
+asserting five known-hard leak shapes are caught and two safe shapes are not.
+
+**Design constraint discovered for phase 2:** a token in a true `#private` field
+is unreachable by `String`, `JSON.stringify`, and `inspect` alike — but the same
+wrapper leaks immediately if it also mirrors the value on a public property.
+`token.ts` must use a private field with no public mirror. Both directions are
+pinned as self-test cases.
+
+**Deferred harness work** (the gate does not cover these yet; the header says so
+rather than implying broader coverage):
+
+- Phase 3/4: a token passed to a spawned grandchild process is unobserved.
+- Phase 4: the probe imports `dist/bin.js`; once that is an interactive TUI it
+  needs a non-interactive entry to drive. Spawn timeouts are already in place.
+- Any phase adding network egress: a token sent over the wire is not detectable
+  here.
+
 ## Risk Assessment
 
 Low. Trap: ESM/CJS mismatch between Ink (ESM) and commander — locked by all packages `"type": "module"`. Signal it broke: `ERR_REQUIRE_ESM` downstream → fix package config here. Second trap: cli→core bundling; verified by the pack-and-install CI step, not by workspace-local runs (F8).

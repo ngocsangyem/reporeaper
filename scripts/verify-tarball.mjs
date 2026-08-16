@@ -20,9 +20,16 @@ const cliDir = join(repoRoot, 'packages/cli');
 const scratch = mkdtempSync(join(tmpdir(), 'reporeaper-tarball-'));
 const failures = [];
 
+const COMMAND_TIMEOUT_MS = 300_000;
+
 /** Runs a command and returns its stdout, throwing on a non-zero exit. */
 function run(command, args, cwd) {
-  return execFileSync(command, args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  return execFileSync(command, args, {
+    cwd,
+    encoding: 'utf8',
+    timeout: COMMAND_TIMEOUT_MS,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 }
 
 try {
@@ -51,8 +58,14 @@ try {
   const packedManifest = JSON.parse(
     run('tar', ['-xzOf', tarballPath, 'package/package.json'], scratch),
   );
-  const packedPrivateDeps = Object.keys(packedManifest.dependencies ?? {}).filter((name) =>
-    name.startsWith('@reporeaper/'),
+  // npm 7+ installs peerDependencies automatically, and optionalDependencies
+  // are attempted too, so all three maps can 404 an installer — not just
+  // `dependencies`.
+  const packedPrivateDeps = ['dependencies', 'peerDependencies', 'optionalDependencies'].flatMap(
+    (field) =>
+      Object.keys(packedManifest[field] ?? {})
+        .filter((name) => name.startsWith('@reporeaper/'))
+        .map((name) => `${name} (${field})`),
   );
   if (packedPrivateDeps.length > 0) {
     failures.push(
@@ -76,6 +89,7 @@ try {
       execFileSync('npm', ['install', '--no-audit', '--no-fund', tarballPath], {
         cwd: project,
         stdio: 'pipe',
+        timeout: COMMAND_TIMEOUT_MS,
       });
     } catch (error) {
       installed = false;
@@ -84,17 +98,30 @@ try {
     }
 
     if (installed) {
-      const binOutput = execFileSync('npx', ['--no-install', 'reporeaper'], {
-        cwd: project,
-        encoding: 'utf8',
-      });
-      if (!binOutput.includes('reporeaper')) {
-        failures.push('installed bin produced unexpected output');
+      // A timeout matters here: from phase 4 the bin is an interactive TUI, and
+      // without one a bin awaiting stdin would hang CI until the job ceiling.
+      try {
+        const binOutput = execFileSync('npx', ['--no-install', 'reporeaper', '--version'], {
+          cwd: project,
+          encoding: 'utf8',
+          timeout: 60_000,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        if (!/^reporeaper \d+\.\d+\.\d+/m.test(binOutput)) {
+          failures.push(`installed bin did not report its version (got: ${binOutput.trim()})`);
+        }
+      } catch (error) {
+        const reason = error.code === 'ETIMEDOUT' ? 'timed out' : `exited ${error.status}`;
+        failures.push(`installed bin ${reason}`);
       }
     }
   }
 
   console.log(`verify-tarball: packed ${tarball}`);
+} catch (error) {
+  // Keep the curated failure list as the output of record; a raw stack here
+  // would bury the reason the gate tripped.
+  failures.push(`verification could not complete: ${error.message}`);
 } finally {
   rmSync(scratch, { recursive: true, force: true });
 }

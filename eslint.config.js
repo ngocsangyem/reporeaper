@@ -9,9 +9,9 @@ import tseslint from 'typescript-eslint';
  * error serialization, which is why the sentinel harness exists.
  */
 const tokenHandlingPaths = [
-  'packages/core/src/**/*.ts',
-  'packages/*/src/server/**/*.ts',
-  'api/**/*.ts',
+  'packages/core/src/**/*.{ts,tsx,mts,mjs,js}',
+  'packages/*/src/server/**/*.{ts,tsx,mts,mjs,js}',
+  'api/**/*.{ts,tsx,mts,mjs,js}',
 ];
 
 export default tseslint.config(
@@ -49,7 +49,9 @@ export default tseslint.config(
   },
   {
     // Build and verification scripts run in Node and are expected to report.
-    files: ['**/*.mjs', '**/*.config.ts', '**/scripts/**', 'eslint.config.js'],
+    // Kept deliberately narrow: a broad `**/scripts/**` or `**/*.config.ts`
+    // would also switch no-console off inside token-handling source trees.
+    files: ['scripts/**/*.mjs', 'packages/*/scripts/**/*.mjs', '*.config.ts', 'eslint.config.js'],
     languageOptions: {
       globals: globals.node,
     },
