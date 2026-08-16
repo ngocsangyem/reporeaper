@@ -101,13 +101,17 @@ try {
       // A timeout matters here: from phase 4 the bin is an interactive TUI, and
       // without one a bin awaiting stdin would hang CI until the job ceiling.
       try {
-        const binOutput = execFileSync('npx', ['--no-install', 'reporeaper', '--version'], {
+        // Run the installed bin through its own shim path rather than npx,
+        // which claims flags like --version for itself before the package sees
+        // them.
+        const binPath = join(project, 'node_modules', '.bin', 'reporeaper');
+        const binOutput = execFileSync(binPath, ['--version'], {
           cwd: project,
           encoding: 'utf8',
           timeout: 60_000,
           stdio: ['ignore', 'pipe', 'pipe'],
         });
-        if (!/^reporeaper \d+\.\d+\.\d+/m.test(binOutput)) {
+        if (!/^\d+\.\d+\.\d+/m.test(binOutput)) {
           failures.push(`installed bin did not report its version (got: ${binOutput.trim()})`);
         }
       } catch (error) {

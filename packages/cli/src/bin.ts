@@ -6,7 +6,7 @@
  * mode, and in CI or a pipe it would crash instead of explaining itself. The
  * non-interactive path is what scripts should use.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GitHubProvider } from '@reporeaper/core';
@@ -111,11 +111,24 @@ function reportFailure(error: unknown): void {
 
 /**
  * True only when this file was executed, not imported. The token-hygiene probe
- * imports this module, and an `endsWith('bin.js')` check would make that import
- * launch the CLI.
+ * imports this module, and a looser check would make that import launch the CLI.
+ *
+ * Both sides are resolved through realpath because an installed package is
+ * invoked through a `node_modules/.bin` symlink: comparing the raw paths makes
+ * every global install a no-op, which is a silent failure rather than a loud
+ * one.
  */
-const isDirectRun =
-  process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+function isExecutedDirectly(): boolean {
+  const invoked = process.argv[1];
+  if (invoked === undefined) return false;
+  try {
+    return realpathSync(resolve(invoked)) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+const isDirectRun = isExecutedDirectly();
 if (isDirectRun) {
   main()
     .then((code) => {

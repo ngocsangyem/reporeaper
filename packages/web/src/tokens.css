@@ -1,0 +1,86 @@
+/* Hallmark · genre: atmospheric · macrostructure: n/a (application view) · theme: Terminal
+ * tone: technical/austere · anchor hue: 265 (blue-tinted ink) · accent: phosphor 155
+ * nav: n/a (app shell) · footer: n/a · enrichment: none (typography only)
+ * pre-emit critique: P5 H5 E4 S5 R5 V4
+ *
+ * Every colour and font in this project comes through a token below. No inline
+ * OKLCH, hex, or font-family anywhere in a component.
+ */
+
+:root {
+  /* ---- Paper ----------------------------------------------------------
+   * Blue-tinted near-black, never #000: pure black reads flat and synthetic,
+   * and this interface is looked at for a long time before a destructive act.
+   * Elevation is carried by lightness, not shadow (dark-surface discipline).
+   */
+  --color-paper: oklch(16% 0.012 265);
+  --color-paper-2: oklch(20% 0.013 265);
+  --color-paper-3: oklch(25% 0.015 265);
+
+  /* ---- Ink ---- */
+  --color-ink: oklch(94% 0.006 265);
+  --color-ink-dim: oklch(72% 0.011 265);
+  --color-ink-faint: oklch(55% 0.013 265);
+
+  --color-rule: oklch(31% 0.014 265);
+  --color-rule-strong: oklch(42% 0.016 265);
+
+  /* ---- Meaning --------------------------------------------------------
+   * The chromatic budget is spent on meaning, not decoration.
+   *   accent  — interactive: focus, selection, the authenticated identity
+   *   danger  — DELETE ONLY. Nothing else in this interface may use it.
+   *   caution — irreversibility and restricted visibility
+   */
+  --color-accent: oklch(80% 0.16 155);
+  --color-accent-dim: oklch(46% 0.09 155);
+  --color-danger: oklch(64% 0.2 25);
+  --color-danger-dim: oklch(38% 0.12 25);
+  --color-caution: oklch(80% 0.13 75);
+  --color-caution-dim: oklch(42% 0.08 75);
+
+  --color-focus: var(--color-accent);
+
+  /* ---- Type -----------------------------------------------------------
+   * System stacks, not web fonts. The strict CSP forbids remote font hosts,
+   * `reporeaper ui` has to work with no network, and the published tarball is
+   * budgeted. Mono-first is the design: this SPA ships in the same binary as
+   * a terminal UI and should read as the same instrument.
+   */
+  --font-display:
+    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+
+  /* ---- Space (4pt) ---- */
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+
+  --rule-hair: 1px;
+
+  /* ---- Motion ---- */
+  --dur-instant: 80ms;
+  --dur-short: 140ms;
+  --dur-medium: 220ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-overlay: 20;
+  --z-dialog: 30;
+}

@@ -1,0 +1,66 @@
+@import './tokens.css';
+@import 'tailwindcss';
+
+/* Expose the tokens to Tailwind utilities so components can use bg-paper-2,
+ * text-ink-dim, and so on without any component ever inlining a raw value. */
+@theme inline {
+  --color-paper: var(--color-paper);
+  --color-paper-2: var(--color-paper-2);
+  --color-paper-3: var(--color-paper-3);
+  --color-ink: var(--color-ink);
+  --color-ink-dim: var(--color-ink-dim);
+  --color-ink-faint: var(--color-ink-faint);
+  --color-rule: var(--color-rule);
+  --color-rule-strong: var(--color-rule-strong);
+  --color-accent: var(--color-accent);
+  --color-accent-dim: var(--color-accent-dim);
+  --color-danger: var(--color-danger);
+  --color-danger-dim: var(--color-danger-dim);
+  --color-caution: var(--color-caution);
+  --color-caution-dim: var(--color-caution-dim);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+}
+
+html,
+body {
+  overflow-x: clip;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers in the table are columns of digits; they must line up. */
+table,
+[data-numeric] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The focus ring appears instantly — never transitioned. A keyboard user with
+ * no indicator for the first 200ms has no indicator. */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-accent-dim);
+  color: var(--color-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
