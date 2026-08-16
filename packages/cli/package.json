@@ -39,8 +39,17 @@
   "devDependencies": {
     "@reporeaper/core": "workspace:*",
     "@types/node": "^22.20.1",
+    "@types/react": "^19.2.18",
+    "ink-testing-library": "^4.0.0",
+    "msw": "^2.15.0",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",
     "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.1",
+    "commander": "^15.0.0",
+    "ink": "^7.1.1",
+    "react": "^19.2.8"
   }
 }
