@@ -12,3 +12,6 @@ coverage/
 .DS_Store
 *.log
 .vercel
+
+# Hook logs are local noise, not project history.
+.claude/hooks/.logs/
