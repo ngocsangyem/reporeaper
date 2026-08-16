@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: 'CLI and TUI'
-status: pending
+status: completed
 priority: P1
 dependencies: [3]
 effort: '4d'
@@ -55,11 +55,11 @@ CLI/TUI call `@reporeaper/core` directly (no proxy hop — they run where the to
 
 ## Success Criteria
 
-- [ ] Selection-integrity test: filter, select 3, change filter, run → exactly those 3 ids acted on
-- [ ] Wrong count refuses; `--yes` bypasses confirm only in non-interactive commands
-- [ ] Non-TTY invocation prints guidance and exits 2 (no Ink raw-mode crash)
-- [ ] Client-driven batch paces mutations ≥1s, backs off on secondary limit, reports already-gone correctly
-- [ ] Exit code 1 on partial batch failure in scripting mode
+- [x] Selection-integrity test: filter, select 3, change filter, run → exactly those 3 ids acted on
+- [x] Wrong count refuses; `--yes` bypasses confirm only in non-interactive commands
+- [x] Non-TTY invocation prints guidance and exits 2 (no Ink raw-mode crash)
+- [x] Client-driven batch paces mutations ≥1s, backs off on secondary limit, reports already-gone correctly
+- [x] Exit code 1 on partial batch failure in scripting mode
 
 ## Risk Assessment
 

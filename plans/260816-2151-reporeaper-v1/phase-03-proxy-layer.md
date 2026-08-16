@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: 'Proxy Layer (RPC)'
-status: pending
+status: completed
 priority: P1
 dependencies: [2]
 effort: '1.5d'
@@ -54,11 +54,11 @@ Local mode mounts the same app via `@hono/node-server` in Phase 4's `ui` command
 
 ## Success Criteria
 
-- [ ] Only the 3 named routes exist; no path pattern forwards arbitrary GitHub paths (F1)
-- [ ] `/api/actions` accepts exactly one repo and verifies id+owner before mutating; mismatch → 403, nothing forwarded
-- [ ] Env token is ignored unless loopback; public env-token start refused without access password
-- [ ] Cross-origin / rebinding / missing-session-token requests to local mode are rejected
-- [ ] Sentinel token absent from all emitted output in the proxy path
+- [x] Only the 3 named routes exist; no path pattern forwards arbitrary GitHub paths (F1)
+- [x] `/api/actions` accepts exactly one repo and verifies id+owner before mutating; mismatch → 403, nothing forwarded
+- [x] Env token is ignored unless loopback; public env-token start refused without access password
+- [x] Cross-origin / rebinding / missing-session-token requests to local mode are rejected
+- [x] Sentinel token absent from all emitted output in the proxy path
 
 ## Risk Assessment
 

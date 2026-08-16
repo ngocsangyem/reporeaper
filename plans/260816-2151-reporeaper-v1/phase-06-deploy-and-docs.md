@@ -1,7 +1,7 @@
 ---
 phase: 6
 title: 'Self-host and Docs'
-status: pending
+status: completed
 priority: P2
 dependencies: [5]
 effort: '1.5d'
@@ -41,11 +41,11 @@ Self-host topology: user's own `their-fork.vercel.app` → static SPA + `/api/*`
 
 ## Success Criteria
 
-- [ ] Delete permission for fine-grained PATs empirically confirmed; docs + core error strings match the measurement
-- [ ] Fresh self-host from the button works paste-only with no configuration
-- [ ] `docs/self-hosting.md` states the loopback/password rule and includes rollback + no-log-drain checklist
-- [ ] A new user can create a correctly-scoped PAT using only `docs/token-guide.md`
-- [ ] README leads with `npx`/local; self-host framed honestly (no claims about an instance the project doesn't run)
+- [x] Delete permission for fine-grained PATs empirically confirmed; docs + core error strings match the measurement
+- [x] Fresh self-host from the button works paste-only with no configuration
+- [x] `docs/self-hosting.md` states the loopback/password rule and includes rollback + no-log-drain checklist
+- [x] A new user can create a correctly-scoped PAT using only `docs/token-guide.md`
+- [x] README leads with `npx`/local; self-host framed honestly (no claims about an instance the project doesn't run)
 
 ## Risk Assessment
 

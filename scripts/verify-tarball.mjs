@@ -10,7 +10,7 @@
  * Run after `pnpm build`.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +21,7 @@ const scratch = mkdtempSync(join(tmpdir(), 'reporeaper-tarball-'));
 const failures = [];
 
 const COMMAND_TIMEOUT_MS = 300_000;
+const MAX_TARBALL_MB = 2;
 
 /** Runs a command and returns its stdout, throwing on a non-zero exit. */
 function run(command, args, cwd) {
@@ -51,6 +52,15 @@ try {
   if (secrets.length > 0) {
     failures.push(`tarball contains env files: ${secrets.join(', ')}`);
   }
+
+  // `npx reporeaper` downloads this on every cold run, so weight is a feature
+  // of the product, not a packaging detail.
+  const sizeBytes = statSync(tarballPath).size;
+  const sizeMb = sizeBytes / 1024 / 1024;
+  if (sizeMb > MAX_TARBALL_MB) {
+    failures.push(`tarball is ${sizeMb.toFixed(2)}MB, over the ${MAX_TARBALL_MB}MB budget`);
+  }
+  console.log(`verify-tarball: ${sizeMb.toFixed(2)}MB, ${listing.length} files`);
 
   // 2. Dependencies: no private workspace packages may survive into the manifest.
   // Read this from the tarball itself rather than from the install, so a bad

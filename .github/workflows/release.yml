@@ -1,0 +1,55 @@
+name: Release
+
+# Manual only. A destructive tool should not publish itself because a branch
+# moved; a human decides when a version goes out.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag to publish, e.g. v0.1.0'
+        required: true
+
+permissions:
+  contents: read
+  # Required for npm provenance, which ties the published tarball to this run.
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The full merge gate runs again here. Publishing is irreversible on npm,
+      # so it does not inherit trust from an earlier green run.
+      - run: pnpm lint
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm hygiene
+      - run: pnpm verify:tarball
+
+      - name: Confirm the tag matches the package version
+        run: |
+          PACKAGE_VERSION="v$(node -p "require('./packages/cli/package.json').version")"
+          if [ "$PACKAGE_VERSION" != "${{ inputs.tag }}" ]; then
+            echo "Tag ${{ inputs.tag }} does not match package version $PACKAGE_VERSION"
+            exit 1
+          fi
+
+      - name: Publish
+        run: pnpm --filter reporeaper publish --access public --provenance --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: 'Web UI'
-status: pending
+status: completed
 priority: P1
 dependencies: [4]
 effort: '4d'
@@ -64,13 +64,13 @@ vite.config.ts           # build.outDir '../cli/dist/web', emptyOutDir
 
 ## Success Criteria
 
-- [ ] One build works in both modes (gate only when `/api/me` mode=byo & token absent/invalid)
-- [ ] Token exists only in memory, unreachable from `window`; refresh = re-paste (test-verified)
-- [ ] Selection-integrity test passes (filter change never mutates selection; actions target selected ids)
-- [ ] Subset-token banner + admin-disabled rows appear for a restricted fine-grained PAT
-- [ ] Confirm dialog warns on non-restorable (fork) repos; strings sanitized
-- [ ] `reporeaper ui` serves the built SPA end-to-end (the Phase 4 `ui` command's live gate)
-- [ ] UI reviewed against hallmark direction — no stock-shadcn look; delete/archive visually distinct
+- [x] One build works in both modes (gate only when `/api/me` mode=byo & token absent/invalid)
+- [x] Token exists only in memory, unreachable from `window`; refresh = re-paste (test-verified)
+- [x] Selection-integrity test passes (filter change never mutates selection; actions target selected ids)
+- [x] Subset-token banner + admin-disabled rows appear for a restricted fine-grained PAT
+- [x] Confirm dialog warns on non-restorable (fork) repos; strings sanitized
+- [x] `reporeaper ui` serves the built SPA end-to-end (the Phase 4 `ui` command's live gate)
+- [x] UI reviewed against hallmark direction — no stock-shadcn look; delete/archive visually distinct
 
 ## Risk Assessment
 

@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: 'Core Package'
-status: pending
+status: completed
 priority: P1
 effort: '2.5d'
 dependencies: [1]
@@ -61,11 +61,11 @@ packages/core/src/
 
 ## Success Criteria
 
-- [ ] Secondary-rate-limit 403 maps to its own class, never to "permission" (msw test)
-- [ ] `runAction` aborts with `changed-since-listing` when the live repo id ≠ selected id
-- [ ] `getViewer` reports token type + seen/account counts so a subset token can be flagged
-- [ ] Grep + runtime sentinel test prove core never logs the token and serializes it as `[redacted]`
-- [ ] Pagination returns >100 repos correctly; filter is substring-only (no fuzzy dep)
+- [x] Secondary-rate-limit 403 maps to its own class, never to "permission" (msw test)
+- [x] `runAction` aborts with `changed-since-listing` when the live repo id ≠ selected id
+- [x] `getViewer` reports token type + seen/account counts so a subset token can be flagged
+- [x] Grep + runtime sentinel test prove core never logs the token and serializes it as `[redacted]`
+- [x] Pagination returns >100 repos correctly; filter is substring-only (no fuzzy dep)
 
 ## Risk Assessment
 

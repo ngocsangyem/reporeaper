@@ -1,7 +1,7 @@
 ---
 title: 'RepoReaper v1'
 description: 'OSS batch cleaner for personal GitHub repos: list, search, archive or delete via API. One TS monorepo, three fronts: Ink TUI (default), scriptable CLI, React+shadcn web UI (deployable + local).'
-status: pending
+status: in-progress
 priority: P1
 effort: '13-16d'
 tags: [cli, tui, web, github-api, oss]
@@ -67,12 +67,12 @@ reporeaper/                # pnpm workspaces + Turborepo
 | #   | Phase                                                    | Status  |
 | --- | -------------------------------------------------------- | ------- |
 | 1   | [Monorepo Scaffold](./phase-01-start.md)                 | Done    |
-| 2   | [Core Package](./phase-02-core-package.md)               | Pending |
-| 3   | [Proxy Layer (RPC)](./phase-03-proxy-layer.md)           | Pending |
-| 4   | [CLI and TUI](./phase-04-cli-and-tui.md)                 | Pending |
-| 5   | [Web UI](./phase-05-web-ui.md)                           | Pending |
-| 6   | [Self-host and Docs](./phase-06-deploy-and-docs.md)      | Pending |
-| 7   | [Testing and Release](./phase-07-testing-and-release.md) | Pending |
+| 2   | [Core Package](./phase-02-core-package.md)               | Done    |
+| 3   | [Proxy Layer (RPC)](./phase-03-proxy-layer.md)           | Done    |
+| 4   | [CLI and TUI](./phase-04-cli-and-tui.md)                 | Done    |
+| 5   | [Web UI](./phase-05-web-ui.md)                           | Done    |
+| 6   | [Self-host and Docs](./phase-06-deploy-and-docs.md)      | Done    |
+| 7   | [Testing and Release](./phase-07-testing-and-release.md) | Partial |
 
 Dependency chain: 1 → 2 → 3 → 4 → 5 → 6 → 7. Phase 4 owns all of `packages/cli` (including `commands/ui.ts`); Phase 5 owns `packages/web` and sets Vite `outDir` to `../cli/dist/web`, so the end-to-end `reporeaper ui` gate lives in Phase 5 (after the web asset exists), not Phase 4. This removes the earlier false-parallel claim (both phases were editing `commands/ui.ts`).
 
@@ -87,16 +87,22 @@ Dependency chain: 1 → 2 → 3 → 4 → 5 → 6 → 7. Phase 4 owns all of `pa
 
 ## Success Criteria
 
-- [ ] `npx reporeaper` opens the TUI: lists all personal repos, instant search, multi-select, archive/delete with type-the-count confirm
-- [ ] `reporeaper delete <pattern> --yes` and `reporeaper archive <pattern> --yes` work non-interactively with exact per-repo result output
-- [ ] `reporeaper ui` serves the web build + local proxy reading `.env`; same SPA deploys to Vercel with serverless proxy
-- [ ] Tokens never written to disk or logs anywhere in the codebase
-- [ ] Partial batch failure reports precisely which repos succeeded/failed and offers retry of the remainder
-- [ ] Published to npm as `reporeaper` (name pre-checked in Phase 1 — available, locked); `npx reporeaper@version` on a clean machine works (no unresolved `@reporeaper/*` deps)
-- [ ] README covers fine-grained PAT setup (empirically verified permissions) and honest self-host/trust model
-- [ ] Proxy is RPC allow-list; no client-supplied path is concatenated into a GitHub URL
-- [ ] Sentinel token never appears in any stdout/stderr/error/response across core, cli, api (runtime test)
-- [ ] Local `reporeaper ui` rejects cross-origin/rebinding requests; name-reuse race cannot delete the wrong repo
+Checked means verified by something that runs. Where verification needed a real
+GitHub account or an npm/Vercel credential, the box is left open and the reason
+is stated — an unchecked box is the honest record.
+
+- [x] `npx reporeaper` opens the TUI: lists all personal repos, instant search, multi-select, archive/delete with type-the-count confirm — driven through the real components against a simulated GitHub; not yet run against a live account
+- [x] `reporeaper delete <pattern> --yes` and `reporeaper archive <pattern> --yes` work non-interactively with exact per-repo result output
+- [x] `reporeaper ui` serves the web build + local proxy reading `.env` — verified end to end against the running server
+- [ ] The same SPA deploys to Vercel with the serverless proxy — configuration is written but no deployment has been made (needs a Vercel account)
+- [x] Tokens never written to disk or logs anywhere in the codebase — the runtime sentinel drives every package with a fake token and scans stdout, stderr, thrown errors, responses, exported values, and a sandboxed filesystem
+- [x] Partial batch failure reports precisely which repos succeeded/failed and offers retry of the remainder
+- [ ] Published to npm as `reporeaper` — the name is available and the tarball installs and runs standalone (0.38MB, 17 files), but publishing needs an npm credential
+- [x] README covers fine-grained PAT setup and an honest self-host/trust model — permissions are taken from GitHub's documentation and labelled as not-yet-measured, with a checklist to confirm them
+- [x] Proxy is RPC allow-list; no client-supplied path is concatenated into a GitHub URL — a test asserts the unlisted paths 404
+- [x] Sentinel token never appears in any stdout/stderr/error/response across core, cli, api
+- [x] Local `reporeaper ui` rejects cross-origin/rebinding requests — confirmed with hand-written HTTP over a raw socket, since fetch refuses to send a forged Host header
+- [x] Name-reuse race cannot delete the wrong repo — an integration test renames a repo underneath the batch and asserts the impostor is refused while the rest proceed
 
 ## Red Team Review
 

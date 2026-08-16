@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: 'Testing and Release'
-status: pending
+status: partial
 priority: P1
 dependencies: [6]
 effort: '2d'
@@ -50,3 +50,49 @@ Publish shape: single npm package `reporeaper` = compiled CLI (core inlined via 
 ## Risk Assessment
 
 Medium. npm bin + ESM + bundled static assets has papercuts (shebang, `import.meta.url` path resolution in global installs) — mitigated by testing the packed tarball (Phase 1's pack-install step catches most of it earlier). Name `reporeaper` taken → already pre-checked in Phase 1 step 0; fallback scope locked before docs were written.
+
+## Outcome
+
+Everything that does not require a credential is done and verified. The release
+itself is not: publishing needs an npm token and the live E2E needs a real
+GitHub account. Both are left for a human rather than faked.
+
+**Done and verified**
+
+- Cross-package integration tests (`packages/cli/src/__tests__/integration.test.ts`)
+  cover the two hard gates against a simulated GitHub: a repository renamed
+  between listing and action is refused while the rest of the batch proceeds,
+  and an interrupted run records an outcome for every repository including the
+  one that failed. A third case proves that retrying an already-deleted
+  repository reports already-gone rather than failing.
+- `reporeaper ui` verified end to end against the running server: it serves the
+  built SPA, the API refuses requests without the session token, and a
+  hand-written HTTP request carrying a forged `Host` header is rejected with
+  `forbidden_host`. fetch cannot forge that header, so this needed a raw socket.
+- The token-hygiene sentinel runs across core, cli and api on every CI run, and
+  self-tests first against five known-hard leak shapes.
+- `pnpm verify:tarball` packs, checks the manifest for private workspace
+  dependencies across all three dependency maps, installs into a clean project
+  outside the workspace, runs the installed bin, and enforces a 2MB budget.
+  Current: 0.38MB, 17 files.
+- `.github/workflows/release.yml` is manual-dispatch only, re-runs the full
+  gate, refuses to publish when the tag and the package version disagree, and
+  publishes with provenance.
+
+**A real bug this phase caught.** The tarball gate failed with an empty version
+string, which turned out to be the direct-run guard in `bin.ts` comparing raw
+paths. An installed package is invoked through a `.bin` symlink, so the
+comparison was false and the CLI did nothing at all — every global install would
+have been a silent no-op. Both sides now resolve through realpath. Only
+installing the tarball outside the workspace surfaces this.
+
+**Not done, and why**
+
+- Publishing to npm: needs an npm credential. The workflow is ready; a human
+  runs it.
+- `npx reporeaper@0.1.0` from the registry on a clean machine: follows publish.
+- A preview self-host deploy on Vercel: needs a Vercel account.
+- The manual E2E against a live throwaway account, and the empirical
+  confirmation of fine-grained PAT permissions owed from phase 6 step 1: both
+  need a real GitHub token. The measurement checklist is in
+  `docs/token-guide.md`.
