@@ -1,10 +1,11 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { createProxyApp } from '@reporeaper/core';
+import { devSessionPath } from '@reporeaper/core/dev-session';
 import { loadDotEnv } from '../dotenv.js';
 import { rawTokenFromEnvironment } from '../token.js';
 
@@ -118,6 +119,42 @@ function serveStatic(root: string, pathname: string, sessionToken: string): Resp
 export interface UiOptions {
   port?: number;
   open?: boolean;
+  /**
+   * Hand the session secret to a local Vite dev server. Only for developing
+   * this project's web UI — see `devSessionPath`.
+   */
+  devSession?: boolean;
+}
+
+/**
+ * Publishes the session secret for the Vite dev server, and takes it away
+ * again when this process ends — including on Ctrl-C, which is how this
+ * command normally exits.
+ */
+function publishDevSession(port: number, sessionToken: string): void {
+  const path = devSessionPath(port);
+  writeFileSync(path, sessionToken, { mode: 0o600 });
+
+  const remove = (): void => {
+    try {
+      rmSync(path, { force: true });
+    } catch {
+      /* the file is in a temp directory; failing to clean it must not crash */
+    }
+  };
+
+  process.on('exit', remove);
+  for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+    process.on(signal, () => {
+      remove();
+      process.exit(0);
+    });
+  }
+
+  process.stdout.write(
+    `Dev session published for the Vite dev server (${path}).\n` +
+      'It is removed when this process stops.\n\n',
+  );
 }
 
 /** Starts the local server. Resolves once it is listening. */
@@ -136,6 +173,8 @@ export async function runUiCommand(options: UiOptions = {}): Promise<number> {
 
   const token = rawTokenFromEnvironment();
   const sessionToken = randomBytes(24).toString('base64url');
+
+  if (options.devSession === true) publishDevSession(port, sessionToken);
 
   const api = createProxyApp({
     isLoopback: true,

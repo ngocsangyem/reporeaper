@@ -7,6 +7,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./dev-session": {
+      "types": "./dist/dev-session.d.ts",
+      "import": "./dist/dev-session.js"
     }
   },
   "main": "./dist/index.js",

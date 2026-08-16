@@ -94,12 +94,13 @@ export function TokenGate(): React.JSX.Element {
         {unreachable ? (
           // Not the token's fault, so it does not get the token's error copy.
           <p role="alert" className="mt-3 text-[length:var(--text-sm)] text-[var(--color-caution)]">
-            GitHub could not be reached, so the token could not be checked. This is not a problem
-            with the token itself — try again in a moment.
+            {me?.message ??
+              'GitHub could not be reached, so the token could not be checked. This is not a ' +
+                'problem with the token itself — try again in a moment.'}
           </p>
         ) : null}
 
-        {me?.message ? (
+        {!unreachable && me?.message ? (
           <p className="mt-3 text-[length:var(--text-sm)] text-[var(--color-caution)]">
             {me.message}
           </p>

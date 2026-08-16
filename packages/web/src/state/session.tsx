@@ -65,9 +65,18 @@ export function SessionProvider({
       setTokenState(response.tokenState);
       setStatus(response.tokenState === 'ok' ? 'ready' : 'needs-token');
     } catch {
-      // A proxy that cannot be reached is not an authentication problem, but
-      // the gate is still the only screen that can explain it.
-      setMe(null);
+      // The server could not be reached at all. Falling through to a bare token
+      // gate here is what makes this look like nothing happened when you press
+      // Continue: the request never got an answer, so there is nothing to say
+      // about the token. Say what actually went wrong instead.
+      setMe({
+        mode: 'byo',
+        tokenState: 'unreachable',
+        message:
+          'Could not reach the RepoReaper server. If you are running `pnpm dev`, ' +
+          'start the API too: `reporeaper ui --dev-session --no-open`.',
+      });
+      setTokenState('unreachable');
       setStatus('needs-token');
     }
   }, [client]);

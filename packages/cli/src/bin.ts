@@ -91,7 +91,8 @@ export async function main(argv: string[] = process.argv): Promise<number> {
     .description('Serve the web UI on 127.0.0.1 and open it')
     .option('-p, --port <port>', 'port to listen on', (value) => Number.parseInt(value, 10))
     .option('--no-open', 'do not open a browser')
-    .action(async (options: { port?: number; open?: boolean }) => {
+    .option('--dev-session', "hand the session secret to this project's Vite dev server")
+    .action(async (options: { port?: number; open?: boolean; devSession?: boolean }) => {
       exitCode = await runUiCommand(options);
     });
 

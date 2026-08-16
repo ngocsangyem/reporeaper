@@ -123,6 +123,32 @@ pnpm hygiene          # sentinel test: no token in module output, responses, or 
 pnpm verify:tarball   # the published package installs and runs standalone
 ```
 
+### Running it locally
+
+The CLI is a workspace package, so it runs from source — nothing needs to be
+published to npm:
+
+```sh
+pnpm build
+pnpm exec reporeaper --help
+```
+
+`pnpm ui` builds everything and serves the web UI the way a user gets it.
+
+To work on the web UI with hot reload you need two processes, because the SPA
+and the API are served separately in development:
+
+```sh
+pnpm dev:api    # the API on 127.0.0.1:7433, and the session secret for Vite
+pnpm dev:web    # Vite on 127.0.0.1:5173, proxying /api to the above
+```
+
+Start `dev:api` first. Without it, every `/api` call fails with
+`ECONNREFUSED 127.0.0.1:7433` and the UI reports that it cannot reach the
+server. `--dev-session` is what lets Vite through the loopback guard: in a real
+run the secret is injected into the page by our own server, which Vite does not
+do.
+
 Node 20.19+ (22 recommended). `packages/core` holds the GitHub client, the
 actions, and the RPC proxy; `packages/cli` is the published binary;
 `packages/web` builds into it.

@@ -256,6 +256,26 @@ describe('token handling', () => {
   });
 });
 
+describe('server unreachable', () => {
+  it('says the server could not be reached instead of failing silently', async () => {
+    // The regression this pins: pressing Continue with no server running left
+    // the gate exactly as it was, with no indication anything had happened.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))),
+    );
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(await screen.findByLabelText('Personal access token'), 'ghp_something');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/could not reach the reporeaper server/i);
+    expect(alert.textContent).not.toMatch(/rejected/i);
+  });
+});
+
 describe('restricted token visibility', () => {
   it('says how many repositories the token cannot see', async () => {
     stubFetch({

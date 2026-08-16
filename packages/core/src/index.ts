@@ -4,6 +4,10 @@
  * Consumed by the CLI/TUI (which run where the token is), by the serverless
  * function, and by the web SPA (types and the pure filter only — the SPA never
  * holds a GitHub client).
+ *
+ * This barrel must stay browser-safe: the SPA bundles it, so importing a
+ * node: built-in here breaks the web build. Node-only helpers live in their own
+ * subpath export (see ./dev-session).
  */
 
 export const CORE_PACKAGE_NAME = '@reporeaper/core';
