@@ -26,8 +26,10 @@ First release.
   is a personal account before touching it. A name that has come to mean a
   different repository is refused, not deleted.
 - Batches run one repository per request, paced a second apart, so an
-  interrupted run still reports exactly what completed. A delete that 404s on
-  retry counts as already gone rather than as a failure.
+  interrupted run still reports exactly what completed. A delete that 404s
+  *after* its id was verified counts as already gone; a repository that cannot
+  be read at all is reported as unresolved rather than deleted, because GitHub
+  answers 404 both for "deleted" and for "your token cannot see this".
 - The proxy is an allow-list of three operations, never a GitHub passthrough.
 - A server-side token is honored only on a loopback listener; a publicly
   reachable instance holding one refuses to serve unless an access password is

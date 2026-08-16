@@ -96,3 +96,42 @@ installing the tarball outside the workspace surfaces this.
   confirmation of fine-grained PAT permissions owed from phase 6 step 1: both
   need a real GitHub token. The measurement checklist is in
   `docs/token-guide.md`.
+
+## Final review round
+
+A second full review (threat-model ordered: wrong-repo deletion, token leakage,
+unauthenticated API access, reporting truth) found **no critical defect** — no
+way to delete an unselected repository, drive the API unauthenticated from a
+browser, or extract a token. It confirmed the id-verification choke point, the
+RPC allow-list, the TUI ref design, and the sanitizer (36 adversarial inputs, no
+escape survivors). Fixed from its findings:
+
+- **Reporting truth (high).** A pre-mutation 404 was reported as "already gone
+  ✓" and dropped from the retry set. GitHub returns 404 both for a deleted
+  repository and for one the token can no longer see, so a narrowed grant
+  mid-batch produced green ticks for repositories that still exist. Now
+  reported as unresolved and retained. The plan's rule was always scoped to
+  "404-on-**verified**-delete", so this restores the intent rather than
+  changing it.
+- **Local secret exposure (medium).** The session secret travelled in the URL
+  handed to the browser, i.e. in a child process's argv (readable from the
+  process table by other local users) and in browser history. It is now
+  injected into the served document, which no other origin can read; verified
+  end to end, including that the process argv is clean.
+- **Misdiagnosis (medium).** An unreachable GitHub or a rate limit was reported
+  as "GitHub rejected that token". Now a distinct `unreachable` state with 503.
+- **Fail-open construction (medium).** `createProxyApp` skipped the session
+  check when `sessionToken` was absent; it now refuses to build a loopback app
+  without one.
+- **Display spoofing (medium).** Zero-width and invisible format characters
+  survived sanitization, letting two descriptions render identically.
+- Plus: release workflow no longer interpolates its tag input into a shell body
+  and checks out the tag it publishes; `.env` is actually read; CLI output
+  sanitizes provider strings; the TUI exits non-zero after a fatal error;
+  flags without a subcommand are an error rather than silently dropped; a
+  failed reload in the web UI no longer leaves deleted repositories on screen.
+
+Left as noted, not fixed: the per-action `GET /user` costs one extra API call
+per repository, and a report line shows the name from the listing rather than
+the live name after a rename. Both are documented trade-offs, neither affects
+which repository is acted on.
