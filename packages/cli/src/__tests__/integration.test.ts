@@ -129,12 +129,11 @@ describe('interrupted batch', () => {
     expect(summary.remaining.map((repo) => repo.name)).toEqual(['network-dies-here']);
   });
 
-  it('retrying the remainder skips what is already gone rather than failing', async () => {
+  it('reports a repository it cannot see as unresolved rather than as deleted', async () => {
     server.use(
       http.get(`${API}/user`, () =>
         HttpResponse.json({ login: 'octocat', public_repos: 1, total_private_repos: 0 }),
       ),
-      // The earlier attempt actually succeeded; the client never saw the reply.
       http.get(`${API}/repos/octocat/already-deleted`, () =>
         HttpResponse.json({ message: 'Not Found' }, { status: 404 }),
       ),
@@ -162,8 +161,10 @@ describe('interrupted batch', () => {
       options,
     );
 
-    expect(summary.succeeded).toHaveLength(1);
-    expect(summary.succeeded[0]?.outcome).toBe('already-gone');
-    expect(summary.remaining).toHaveLength(0);
+    // GitHub answers 404 both for "deleted" and for "your token lost access",
+    // so this stays in the retry set instead of being reported as done.
+    expect(summary.succeeded).toHaveLength(0);
+    expect(summary.failed[0]?.code).toBe('not-visible');
+    expect(summary.remaining).toHaveLength(1);
   });
 });

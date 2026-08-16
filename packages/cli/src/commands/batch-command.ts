@@ -68,7 +68,7 @@ export async function runBatchCommand(
   print(`${matched.length} repositor${matched.length === 1 ? 'y' : 'ies'} match:`);
   for (const repo of matched) {
     const blocked = repo.permissions.admin ? '' : ' [no admin rights — will fail]';
-    print(`  ${repo.name}  #${repo.id}${restorabilityNote(repo)}${blocked}`);
+    print(`  ${sanitizeDisplay(repo.name, 60)}  #${repo.id}${restorabilityNote(repo)}${blocked}`);
   }
 
   if (options.dryRun) {

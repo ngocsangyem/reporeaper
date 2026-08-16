@@ -11,7 +11,10 @@
  *
  * Known coverage limits, stated so the gate is not read as broader than it is:
  * a token handed to a spawned grandchild process, or sent over the network, is
- * not observed here. Phases that add either must extend this harness.
+ * not observed here. Neither is a token written to a stream other than stdout
+ * or stderr. The harness also only imports each entry and drives an exported
+ * request handler — it does not run the CLI as a process, so output produced
+ * during a real `reporeaper delete` run is outside what this proves.
  *
  * Run after `pnpm build` (it probes built output, plus the serverless entry
  * bundled on the fly).

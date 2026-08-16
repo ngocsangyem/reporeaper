@@ -32,6 +32,14 @@ describe('sanitizeDisplay', () => {
     expect(safe).toBe('repo');
   });
 
+  it('strips zero-width characters that make two names render identically', () => {
+    const ZERO_WIDTH_SPACE = String.fromCharCode(0x200b);
+    const SOFT_HYPHEN = String.fromCharCode(0x00ad);
+
+    expect(sanitizeDisplay(`my-re${ZERO_WIDTH_SPACE}po`)).toBe('my-repo');
+    expect(sanitizeDisplay(`my-re${SOFT_HYPHEN}po`)).toBe('my-repo');
+  });
+
   it('truncates without letting a long name flood the display', () => {
     const safe = sanitizeDisplay('a'.repeat(500), 50);
 

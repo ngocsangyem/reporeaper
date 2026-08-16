@@ -90,16 +90,22 @@ describe('runAction identity verification', () => {
 });
 
 describe('runAction outcomes', () => {
-  it('treats an absent repository as success for delete (retry after a success)', async () => {
+  it('does not claim success when the repository cannot be seen before acting', async () => {
+    // A 404 at the pre-check is ambiguous: already deleted, or no longer
+    // visible to this token. Reporting "deleted" would be the one lie that
+    // matters — the user would believe a repository is gone while it exists.
     const repo = makeRepo();
-    const provider = stubProvider({ getRepo: vi.fn().mockResolvedValue(null) });
+    const deleteRepo = vi.fn();
+    const provider = stubProvider({ getRepo: vi.fn().mockResolvedValue(null), deleteRepo });
 
     const result = await runAction(provider, toRepoRef(repo), 'delete', options);
 
-    expect(result).toMatchObject({ ok: true, outcome: 'already-gone' });
+    expect(result).toMatchObject({ ok: false, outcome: 'failed', code: 'not-visible' });
+    expect(result.error).toMatch(/may already be deleted, or this token may no longer have access/);
+    expect(deleteRepo).not.toHaveBeenCalled();
   });
 
-  it('treats a 404 during the delete itself as already-gone', async () => {
+  it('treats a 404 during the delete itself as already-gone, because the id was just verified', async () => {
     const repo = makeRepo();
     const provider = stubProvider({
       getRepo: vi.fn().mockResolvedValue(repo),
@@ -111,13 +117,13 @@ describe('runAction outcomes', () => {
     expect(result).toMatchObject({ ok: true, outcome: 'already-gone' });
   });
 
-  it('treats an absent repository as a failure for archive', async () => {
+  it('treats an absent repository as a failure for archive too', async () => {
     const repo = makeRepo();
     const provider = stubProvider({ getRepo: vi.fn().mockResolvedValue(null) });
 
     const result = await runAction(provider, toRepoRef(repo), 'archive', options);
 
-    expect(result).toMatchObject({ ok: false, outcome: 'failed', code: 'not-found' });
+    expect(result).toMatchObject({ ok: false, outcome: 'failed', code: 'not-visible' });
   });
 
   it('reports a permission failure without throwing, so a batch can continue', async () => {

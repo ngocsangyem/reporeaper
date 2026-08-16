@@ -114,6 +114,13 @@ describe('token resolution', () => {
   });
 });
 
+describe('construction', () => {
+  it('refuses to build a loopback app without a session secret', () => {
+    // Optional-and-skipped would mean any local process could drive deletes.
+    expect(() => createProxyApp({ isLoopback: true, envToken: 'ghp_x' })).toThrow(/sessionToken/);
+  });
+});
+
 describe('/api/me', () => {
   it('distinguishes an absent token from an invalid one', async () => {
     const absent = createProxyApp({ isLoopback: false });
@@ -131,6 +138,21 @@ describe('/api/me', () => {
     });
     expect(invalidResponse.status).toBe(403);
     expect(await invalidResponse.json()).toMatchObject({ tokenState: 'invalid' });
+  });
+
+  it('does not blame the token when GitHub itself is unreachable', async () => {
+    const app = createProxyApp({
+      isLoopback: false,
+      createProvider: () =>
+        stubProvider({ getViewer: vi.fn().mockRejectedValue(new Error('network down')) }),
+    });
+
+    const response = await app.request('/api/me', { headers: { 'x-github-token': 'ghp_fine' } });
+
+    // 503, not 403: telling the user their working token was rejected sends
+    // them to re-mint a credential that is fine.
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ tokenState: 'unreachable' });
   });
 
   it('reports the login and token type when the token works', async () => {

@@ -29,9 +29,11 @@ export interface AppProps {
   provider: Provider;
   /** Injected so tests can drive the batch without real timers. */
   sleep?: (ms: number) => Promise<void>;
+  /** Lets the caller exit non-zero when the session ended in failure. */
+  onFatalError?: (message: string) => void;
 }
 
-export function App({ provider, sleep }: AppProps): React.JSX.Element {
+export function App({ provider, sleep, onFatalError }: AppProps): React.JSX.Element {
   const { exit } = useApp();
 
   const [screen, setScreen] = useState<Screen>('loading');
@@ -92,7 +94,12 @@ export function App({ provider, sleep }: AppProps): React.JSX.Element {
         setScreen('list');
       } catch (error) {
         if (cancelled) return;
-        setFailure(sanitizeDisplay(error instanceof Error ? error.message : 'Unknown error', 200));
+        const message = sanitizeDisplay(
+          error instanceof Error ? error.message : 'Unknown error',
+          200,
+        );
+        setFailure(message);
+        onFatalError?.(message);
         setScreen('error');
       }
     })();
@@ -100,7 +107,7 @@ export function App({ provider, sleep }: AppProps): React.JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [provider]);
+  }, [provider, onFatalError]);
 
   const visible = useMemo(
     () => (listing === null ? [] : filterRepos(listing.repos, query)),

@@ -32,6 +32,28 @@ function isBidiControl(codePoint: number): boolean {
   );
 }
 
+/**
+ * Zero-width and invisible format characters.
+ *
+ * These render as nothing, so two different strings can look identical on the
+ * confirmation screen — `my-re<ZWSP>po` is pixel-identical to `my-repo`. GitHub
+ * restricts repository names to a safe charset, so the reachable surface is a
+ * description, and identity is carried by the id printed beside every name.
+ * Stripping them anyway costs nothing and removes the ambiguity entirely.
+ */
+function isInvisible(codePoint: number): boolean {
+  return (
+    (codePoint >= 0x200b && codePoint <= 0x200d) || // zero-width space/non-joiner/joiner
+    codePoint === 0x00ad || // soft hyphen
+    codePoint === 0x180e || // Mongolian vowel separator
+    codePoint === 0xfeff || // zero-width no-break space / BOM
+    codePoint === 0xfe0f || // variation selector-16
+    codePoint === 0x0489 || // combining enclosing sign
+    (codePoint >= 0xfff9 && codePoint <= 0xfffb) || // interlinear annotation
+    (codePoint >= 0xe0000 && codePoint <= 0xe007f) // tag characters
+  );
+}
+
 /** True for the final byte of an ANSI CSI sequence (the `@`..`~` range). */
 function isCsiTerminator(codePoint: number): boolean {
   return codePoint >= 0x40 && codePoint <= 0x7e;
@@ -85,7 +107,7 @@ export function sanitizeDisplay(value: string, maxLength: number = DEFAULT_MAX_L
       index = skipEscapeSequence(units, index);
       continue;
     }
-    if (!isControl(codePoint) && !isBidiControl(codePoint)) {
+    if (!isControl(codePoint) && !isBidiControl(codePoint) && !isInvisible(codePoint)) {
       kept.push(String.fromCodePoint(codePoint));
     }
     index += 1;

@@ -49,7 +49,7 @@ reporeaper/                # pnpm workspaces + Turborepo
 
 - Proxy is an **RPC allow-list** (3 named routes), not a raw GitHub passthrough. Core's GitHub client base URL is always `api.github.com`; the web SPA uses its own thin `/api` client. This closes the guardrail-bypass hole.
 - `createProxyApp` lives in `core`; `api/` depends on `core` only (no Ink/React/commander in the serverless function). Vercel entry is `api/[...path].ts`.
-- Local `reporeaper ui` binds `127.0.0.1`, validates `Host` + `Sec-Fetch-Site`, and requires a per-process session token printed in the launch URL (anti-CSRF / anti-DNS-rebinding).
+- Local `reporeaper ui` binds `127.0.0.1`, validates `Host` + `Sec-Fetch-Site`, and requires a per-process session token (anti-CSRF / anti-DNS-rebinding). **Refined during implementation:** the token is injected into the served document instead of the launch URL — a URL is passed to the browser as a command-line argument, readable from the process table by any other local user, and it persists in history.
 - Every action re-verifies the selected repo `id` (and `owner.type === 'User'`) before mutating; name-reuse race cannot delete the wrong repo. Repo `name` is `encodeURIComponent`-encoded + charset-gated; `/api/actions` body is schema-validated.
 - Rate limiting: mutations paced ≥1s, honor `retry-after`/`x-ratelimit-reset`, secondary-rate-limit is its own error class; `404` on retry-after-success = already-gone (success, not failure).
 - Token hygiene = ESLint `no-console` (scoped) + a **runtime sentinel test** across core/cli/api, plus a token wrapper whose `toString`/`toJSON` return `[redacted]`. Wired into CI from Phase 1.

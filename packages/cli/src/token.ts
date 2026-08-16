@@ -21,9 +21,20 @@ export const TOKEN_HELP =
   'Set GITHUB_TOKEN (or GH_TOKEN) to a personal access token with permission to ' +
   'administer your repositories. See the README for which permissions to grant.';
 
+/**
+ * The single precedence rule for reading a token from the environment.
+ *
+ * Everything that needs the environment token goes through this, so a caller
+ * cannot re-derive it with slightly different rules and end up disagreeing with
+ * what the rest of the process believes it is using.
+ */
+export function rawTokenFromEnvironment(env: NodeJS.ProcessEnv = process.env): string | null {
+  return env.GITHUB_TOKEN?.trim() || env.GH_TOKEN?.trim() || null;
+}
+
 /** Reads a token from the environment, if one is there. */
 export function tokenFromEnvironment(env: NodeJS.ProcessEnv = process.env): GitHubToken | null {
-  const raw = env.GITHUB_TOKEN?.trim() || env.GH_TOKEN?.trim();
+  const raw = rawTokenFromEnvironment(env);
   return raw ? new GitHubToken(raw) : null;
 }
 

@@ -11,7 +11,12 @@ import type { ActionResult, RepoAction, RepoListing } from '@reporeaper/core';
 
 export interface MeResponse {
   mode: 'local' | 'byo';
-  tokenState: 'absent' | 'invalid' | 'ok';
+  /**
+   * `unreachable` is distinct from `invalid` on purpose: a GitHub outage or a
+   * rate limit says nothing about the token, and telling the user it was
+   * rejected sends them to re-mint a credential that works.
+   */
+  tokenState: 'absent' | 'invalid' | 'ok' | 'unreachable';
   login?: string;
   tokenType?: 'classic' | 'fine-grained' | 'unknown';
   message?: string;
@@ -41,14 +46,22 @@ export class ApiError extends Error {
 }
 
 /**
- * The session token from the launch URL.
+ * The per-process session token for the local server.
  *
- * `reporeaper ui` prints it in the URL; the local proxy refuses any request
- * without it, which is what stops a random page in another tab from driving
- * the localhost API.
+ * `reporeaper ui` injects it into the served document rather than the URL: a
+ * URL is handed to the browser as a command-line argument and kept in history,
+ * where other local users and later sessions can read it. Another origin cannot
+ * read this document, because nothing sends it a CORS header.
+ *
+ * The query parameter is still accepted so an older launch URL keeps working.
  */
-function sessionTokenFromUrl(): string | null {
-  if (typeof window === 'undefined') return null;
+function sessionToken(): string | null {
+  if (typeof document === 'undefined') return null;
+
+  const meta = document.querySelector('meta[name="reporeaper-session"]');
+  const injected = meta?.getAttribute('content');
+  if (injected) return injected;
+
   return new URLSearchParams(window.location.search).get('s');
 }
 
@@ -70,7 +83,7 @@ export class ApiClient {
     this.#getToken = options.getToken;
     this.#onUnauthenticated = options.onUnauthenticated;
     this.#baseUrl = options.baseUrl ?? '';
-    this.#sessionToken = sessionTokenFromUrl();
+    this.#sessionToken = sessionToken();
   }
 
   async #request<T>(path: string, init: RequestInit = {}): Promise<T> {

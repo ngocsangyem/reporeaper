@@ -67,9 +67,11 @@ crashing.
 reporeaper ui
 ```
 
-Serves the same interface on `127.0.0.1` with a per-process session token in the
-URL. The token comes from your environment or `.env`; nothing leaves your
-machine. Loopback only — not your local network.
+Serves the same interface on `127.0.0.1`. Each run mints a session secret that
+the page receives in the document itself — never in the URL, so it does not
+reach a command line or your browser history. Your GitHub token comes from the
+environment or `.env`; nothing leaves your machine. Loopback only, not your
+local network.
 
 ## The token
 
@@ -117,7 +119,7 @@ pnpm install
 pnpm build
 pnpm test
 pnpm lint && pnpm typecheck
-pnpm hygiene          # sentinel test: no token reaches any output path
+pnpm hygiene          # sentinel test: no token in module output, responses, or disk
 pnpm verify:tarball   # the published package installs and runs standalone
 ```
 

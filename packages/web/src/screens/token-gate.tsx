@@ -14,6 +14,7 @@ export function TokenGate(): React.JSX.Element {
   const [busy, setBusy] = useState(false);
 
   const rejected = tokenState === 'invalid';
+  const unreachable = tokenState === 'unreachable';
 
   async function submit(event: React.FormEvent): Promise<void> {
     event.preventDefault();
@@ -22,6 +23,10 @@ export function TokenGate(): React.JSX.Element {
     try {
       await setToken(value);
     } finally {
+      // Drop the local copy either way: on success the provider holds it, and
+      // on failure there is no reason for the rejected value to sit in the
+      // input and in component state.
+      setValue('');
       setBusy(false);
     }
   }
@@ -83,6 +88,14 @@ export function TokenGate(): React.JSX.Element {
           >
             GitHub rejected that token. Check it has not expired, and that it grants administration
             rights on the repositories you want to remove.
+          </p>
+        ) : null}
+
+        {unreachable ? (
+          // Not the token's fault, so it does not get the token's error copy.
+          <p role="alert" className="mt-3 text-[length:var(--text-sm)] text-[var(--color-caution)]">
+            GitHub could not be reached, so the token could not be checked. This is not a problem
+            with the token itself — try again in a moment.
           </p>
         ) : null}
 

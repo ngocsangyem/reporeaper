@@ -2,6 +2,7 @@ import {
   DEFAULT_PACE_MS,
   pace,
   runAction,
+  sanitizeDisplay,
   toRepoRef,
   type ActionResult,
   type Provider,
@@ -94,7 +95,9 @@ export async function runBatch(
 
 /** One-line rendering of a result, for both the TUI report and the CLI output. */
 export function describeResult(result: ActionResult): string {
-  const name = result.repo.name;
+  // Sanitized here too: this line is printed to a terminal, and the name is
+  // provider-supplied text.
+  const name = sanitizeDisplay(result.repo.name, 60);
   switch (result.outcome) {
     case 'ok':
       return `${name}: ${result.action === 'delete' ? 'deleted' : 'archived'}`;

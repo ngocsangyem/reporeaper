@@ -71,17 +71,24 @@ export async function runAction(
     const live = await provider.getRepo(repo.owner, repo.name);
 
     if (live === null) {
-      // Nothing is there. For a delete that is the desired end state — and it is
-      // what a retry after a successful-but-unacknowledged delete looks like.
-      return action === 'delete'
-        ? { ...base, ok: true, outcome: 'already-gone' }
-        : {
-            ...base,
-            ok: false,
-            outcome: 'failed',
-            code: 'not-found',
-            error: `"${sanitizeDisplay(repo.name)}" no longer exists.`,
-          };
+      // A 404 here is ambiguous and must not be read as success. It means
+      // either the repository is already deleted, or this token can no longer
+      // see it — GitHub returns 404 for both, deliberately, so that a token
+      // cannot probe for the existence of private repositories.
+      //
+      // Claiming "deleted" would be the one lie this tool must never tell: the
+      // user would close the terminal believing a repository is gone while it
+      // still exists. Nothing was verified and nothing was attempted, so this
+      // is reported as unresolved and stays in the retry set.
+      return {
+        ...base,
+        ok: false,
+        outcome: 'failed',
+        code: 'not-visible',
+        error:
+          `"${sanitizeDisplay(repo.name)}" was not found. It may already be deleted, ` +
+          'or this token may no longer have access to it — GitHub reports both the same way.',
+      };
     }
 
     const mismatch = describeMismatch(repo, live, options.authenticatedLogin);
@@ -103,7 +110,11 @@ export async function runAction(
 
     return { ...base, ok: true, outcome: 'ok' };
   } catch (error) {
-    // A delete that 404s at the mutation step also means it is already gone.
+    // A 404 at the mutation step is a different situation from a 404 at the
+    // pre-check: a GET succeeded moments ago and confirmed this exact id, so
+    // the repository existed and was visible. Something removed it in between,
+    // and the overwhelmingly likely something is our own delete whose response
+    // was lost. This one is safe to count as done.
     if (error instanceof NotFoundError && action === 'delete') {
       return { ...base, ok: true, outcome: 'already-gone' };
     }

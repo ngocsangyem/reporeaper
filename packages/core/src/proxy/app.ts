@@ -90,6 +90,14 @@ function isAllowedLocalHost(host: string | undefined, port: number | undefined):
 }
 
 export function createProxyApp(options: ProxyOptions) {
+  // Refuse to build a loopback app without a session secret rather than
+  // silently skipping the check. This is exported API: a caller who forgets the
+  // field would otherwise get a server that performs deletes for any local
+  // process, and nothing would say so.
+  if (options.isLoopback && !options.sessionToken) {
+    throw new Error('createProxyApp requires a sessionToken when isLoopback is true.');
+  }
+
   const app = new Hono<{ Variables: RequestState }>();
 
   /**
@@ -131,12 +139,10 @@ export function createProxyApp(options: ProxyOptions) {
       return context.json({ error: 'cross_site_request_refused' }, 403);
     }
 
-    const expected = options.sessionToken;
-    if (expected) {
-      const presented = context.req.header('x-session-token') ?? '';
-      if (!secretsMatch(presented, expected)) {
-        return context.json({ error: 'invalid_session_token' }, 403);
-      }
+    const expected = options.sessionToken ?? '';
+    const presented = context.req.header('x-session-token') ?? '';
+    if (!secretsMatch(presented, expected)) {
+      return context.json({ error: 'invalid_session_token' }, 403);
     }
 
     return next();
@@ -200,9 +206,13 @@ export function createProxyApp(options: ProxyOptions) {
       if (error instanceof TokenInvalidError) {
         return context.json({ mode, tokenState: 'invalid' as const }, 403);
       }
+      // Anything else — GitHub unreachable, a 500, a rate limit on /user — is
+      // not a verdict on the token. Reporting it as "rejected" would send the
+      // user off to revoke and re-mint a credential that works fine, which is
+      // the same conflation this route exists to avoid, one category over.
       return context.json(
-        { mode, tokenState: 'invalid' as const, message: toSafeMessage(error) },
-        403,
+        { mode, tokenState: 'unreachable' as const, message: toSafeMessage(error) },
+        503,
       );
     }
   });

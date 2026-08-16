@@ -5,7 +5,8 @@ import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { createProxyApp } from '@reporeaper/core';
-import { tokenFromEnvironment } from '../token.js';
+import { loadDotEnv } from '../dotenv.js';
+import { rawTokenFromEnvironment } from '../token.js';
 
 /**
  * `reporeaper ui` — the local web UI.
@@ -13,7 +14,8 @@ import { tokenFromEnvironment } from '../token.js';
  * Bound to 127.0.0.1 only. Any page in the user's browser can send a simple
  * cross-site request to localhost while this is running, and DNS rebinding
  * defeats an origin check on its own, so the proxy additionally requires a
- * per-process session token that only appears in the launch URL.
+ * per-process session token, which is injected into the served document
+ * rather than the URL so it never reaches a command line or browser history.
  */
 
 const DEFAULT_PORT = 7433;
@@ -71,8 +73,15 @@ function openBrowser(url: string): void {
  * The requested path is resolved and then checked to still be inside the root,
  * so `../` cannot walk out of it and serve arbitrary files from the user's
  * machine over the loopback port.
+ *
+ * The session secret is injected into the HTML rather than carried in the URL.
+ * A URL is passed to the browser as a command-line argument, which on a shared
+ * machine is readable by any other local user through the process table — and
+ * it then persists in browser history. Serving it in the document keeps it to
+ * the one place it is needed: another origin cannot read this response, because
+ * no CORS header permits it.
  */
-function serveStatic(root: string, pathname: string): Response {
+function serveStatic(root: string, pathname: string, sessionToken: string): Response {
   const relative =
     pathname === '/' ? 'index.html' : normalize(pathname).replace(/^(\.\.[/\\])+/, '');
   const candidate = resolve(join(root, relative));
@@ -85,6 +94,20 @@ function serveStatic(root: string, pathname: string): Response {
     existsSync(candidate) && extname(candidate) !== '' ? candidate : join(root, 'index.html');
   if (!existsSync(file)) {
     return new Response('The web UI is not built.', { status: 404 });
+  }
+
+  if (extname(file) === '.html') {
+    const html = readFileSync(file, 'utf8').replace(
+      '</head>',
+      `<meta name="reporeaper-session" content="${sessionToken}"></head>`,
+    );
+    return new Response(html, {
+      headers: {
+        'content-type': CONTENT_TYPES['.html'] as string,
+        // The document carries a secret, so it must not be stored anywhere.
+        'cache-control': 'no-store',
+      },
+    });
   }
 
   return new Response(readFileSync(file), {
@@ -107,12 +130,19 @@ export async function runUiCommand(options: UiOptions = {}): Promise<number> {
     return 1;
   }
 
-  const token = tokenFromEnvironment();
+  // The README tells people to put their token in .env for this command, so
+  // this command has to actually read it.
+  loadDotEnv();
+
+  const token = rawTokenFromEnvironment();
   const sessionToken = randomBytes(24).toString('base64url');
 
   const api = createProxyApp({
     isLoopback: true,
-    envToken: token ? process.env.GITHUB_TOKEN || process.env.GH_TOKEN || null : null,
+    // The value that was actually resolved, not a second read of the
+    // environment with different precedence — which could report "using your
+    // token" while the proxy resolved a different one, or none.
+    envToken: token,
     sessionToken,
     port,
   });
@@ -121,7 +151,7 @@ export async function runUiCommand(options: UiOptions = {}): Promise<number> {
     fetch: (request: Request): Response | Promise<Response> => {
       const url = new URL(request.url);
       if (url.pathname.startsWith('/api/')) return api.fetch(request);
-      return serveStatic(root, url.pathname);
+      return serveStatic(root, url.pathname, sessionToken);
     },
   };
 
@@ -132,7 +162,9 @@ export async function runUiCommand(options: UiOptions = {}): Promise<number> {
       // endpoint to the subnet.
       { fetch: app.fetch, port, hostname: '127.0.0.1' },
       () => {
-        const url = `http://127.0.0.1:${port}/?s=${sessionToken}`;
+        // No secret in the URL: it would end up in the browser's argv, its
+        // history, and its session restore.
+        const url = `http://127.0.0.1:${port}/`;
         process.stdout.write(
           `RepoReaper is running at:\n\n  ${url}\n\n` +
             `${token ? 'Using the token from your environment.' : 'No token in the environment — paste one in the UI.'}\n` +

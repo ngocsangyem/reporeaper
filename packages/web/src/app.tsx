@@ -150,8 +150,16 @@ function Workspace(): React.JSX.Element {
           onDone={() => {
             setView('list');
             void (async () => {
-              const reloaded = await client.listRepos();
-              setListing(reloaded);
+              try {
+                setListing(await client.listRepos());
+              } catch (error) {
+                // A failed reload must not leave deleted repositories on screen
+                // looking like they still exist.
+                setListing(null);
+                setLoadError(
+                  error instanceof Error ? error.message : 'Could not reload repositories.',
+                );
+              }
             })();
           }}
         />

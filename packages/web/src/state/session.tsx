@@ -13,7 +13,7 @@ import { ApiClient, type MeResponse } from '../api/client.js';
 export interface SessionValue {
   status: 'checking' | 'ready' | 'needs-token';
   me: MeResponse | null;
-  tokenState: 'absent' | 'invalid' | 'ok';
+  tokenState: 'absent' | 'invalid' | 'ok' | 'unreachable';
   client: ApiClient;
   /** True when the server holds the token (local mode) — no gate needed. */
   isLocalMode: boolean;
@@ -30,8 +30,11 @@ export function SessionProvider({
   children: React.ReactNode;
   baseUrl?: string;
 }): React.JSX.Element {
-  // A ref, not state: this value must never end up in a React DevTools tree
-  // snapshot or a serialized state dump.
+  // A ref rather than state: the token never becomes part of a render, so it
+  // is not in any serialized state payload and does not propagate through the
+  // component tree. It is NOT hidden from someone at the keyboard — React
+  // DevTools can read a hook's ref — and it does not need to be: the threat
+  // this design addresses is the token outliving the tab, which it cannot.
   const tokenRef = useRef<string | null>(null);
 
   const [status, setStatus] = useState<SessionValue['status']>('checking');

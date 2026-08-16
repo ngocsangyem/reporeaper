@@ -20,7 +20,12 @@ jobs:
     timeout-minutes: 20
     environment: release
     steps:
+      # Check out the tag being released, not whatever the dispatch branch
+      # points at — otherwise the published artifact need not match the tag it
+      # is named after.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
 
       - uses: pnpm/action-setup@v4
 
@@ -41,11 +46,17 @@ jobs:
       - run: pnpm hygiene
       - run: pnpm verify:tarball
 
+      # The tag goes through the environment, never interpolated into the shell
+      # body: `${{ }}` in a run block is substituted before bash sees it, so a
+      # dispatcher could inject commands that run before the publish step and
+      # alter the very tree that then gets published with provenance.
       - name: Confirm the tag matches the package version
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
           PACKAGE_VERSION="v$(node -p "require('./packages/cli/package.json').version")"
-          if [ "$PACKAGE_VERSION" != "${{ inputs.tag }}" ]; then
-            echo "Tag ${{ inputs.tag }} does not match package version $PACKAGE_VERSION"
+          if [ "$PACKAGE_VERSION" != "$TAG" ]; then
+            echo "Tag $TAG does not match package version $PACKAGE_VERSION"
             exit 1
           fi
 

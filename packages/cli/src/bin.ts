@@ -40,9 +40,19 @@ async function startTui(): Promise<number> {
     import('./tui/app.js'),
   ]);
 
-  const instance = render(React.createElement(App, { provider: new GitHubProvider(token) }));
+  let failed = false;
+  const instance = render(
+    React.createElement(App, {
+      provider: new GitHubProvider(token),
+      onFatalError: () => {
+        failed = true;
+      },
+    }),
+  );
   await instance.waitUntilExit();
-  return 0;
+  // A session that ended on the error screen did not succeed, and a script
+  // wrapping this should be able to tell.
+  return failed ? 1 : 0;
 }
 
 /** Runs the CLI and returns an exit code. */
@@ -86,13 +96,21 @@ export async function main(argv: string[] = process.argv): Promise<number> {
     });
 
   // Bare invocation means the TUI; commander would otherwise print help.
-  const hasCommand = argv.slice(2).some((argument) => !argument.startsWith('-'));
-  if (
-    !hasCommand &&
-    !argv.includes('--help') &&
-    !argv.includes('-h') &&
-    !argv.includes('--version')
-  ) {
+  const rest = argv.slice(2);
+  const hasCommand = rest.some((argument) => !argument.startsWith('-'));
+  const wantsInfo = ['--help', '-h', '--version', '-V'].some((flag) => rest.includes(flag));
+
+  if (!hasCommand && !wantsInfo) {
+    // Flags without a command are almost always a mistyped subcommand
+    // (`reporeaper -p 9000` meaning `reporeaper ui -p 9000`). Starting the TUI
+    // and quietly discarding them is the wrong kind of forgiving.
+    if (rest.length > 0) {
+      process.stderr.write(
+        `Unknown options for the interactive UI: ${rest.join(' ')}\n` +
+          'Did you mean `reporeaper ui`? Run `reporeaper --help` for the commands.\n',
+      );
+      return 2;
+    }
     return startTui();
   }
 
