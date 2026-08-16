@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+
+      - run: pnpm build
+
+      - run: pnpm test
+
+      # Token hygiene is a merge gate, not a release-time check: it drives every
+      # token-handling package with a sentinel and fails if it ever surfaces.
+      - name: Token hygiene (runtime sentinel)
+        run: pnpm hygiene
+
+      # Catches a tarball that still depends on the private @reporeaper/*
+      # packages — invisible inside the workspace, fatal for every installer.
+      - name: Verify published tarball
+        run: pnpm verify:tarball
+
+      - name: Audit dependencies
+        run: pnpm audit --audit-level=high

@@ -1,0 +1,13 @@
+# Authored documents are formatted by hand; the formatter must not rewrite them.
+plans/
+docs/
+.claude/
+.agents/
+.agentkit/
+CHANGELOG.md
+
+# Generated or vendored
+dist/
+node_modules/
+.turbo/
+pnpm-lock.yaml

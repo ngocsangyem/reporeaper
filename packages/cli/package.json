@@ -1,0 +1,45 @@
+{
+  "name": "reporeaper",
+  "version": "0.1.0",
+  "description": "Batch archive or delete your personal GitHub repos from a TUI, a CLI, or a local web UI.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "reporeaper": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "github",
+    "cli",
+    "tui",
+    "repository",
+    "cleanup",
+    "archive"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint . --no-error-on-unmatched-pattern",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@reporeaper/core": "workspace:*",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

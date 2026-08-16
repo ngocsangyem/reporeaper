@@ -1,0 +1,19 @@
+{
+  "name": "@reporeaper/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-placeholder.mjs",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint . --no-error-on-unmatched-pattern",
+    "typecheck": "tsc --version"
+  },
+  "dependencies": {
+    "@reporeaper/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
